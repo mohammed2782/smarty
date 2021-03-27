@@ -28,7 +28,7 @@ response.setCharacterEncoding("UTF-8");
 	Connection conn = null;
 	String className = mgr.getClass().getCanonicalName();
 	try{
-	
+	System.out.println("hello");
 		conn =  mysql.getConn();
 		ServletContext servletContext = getServletContext();
 		String mainProjectPath = servletContext.getContextPath()+"";
