@@ -1,0 +1,44 @@
+body {
+	margin: 0;
+	font-size: 16px;
+	color: #000000;
+	font-family: Arial, Helvetica, sans-serif;
+	width: 100%;
+	height: 100%;
+}
+
+#slider {
+	position: static;
+	background-color: maroon;
+	background-repeat: no-repeat;
+	background-position: bottom;
+	width: 100%;
+	height: 150px;
+	margin-top: -200px;
+	<!--
+	the
+	start
+	point
+	-->
+}
+
+#slider img {
+	border: 0;
+	margin-top: -30px;
+}
+
+#sliderContent {
+	margin: 10px 0 0 -100px;
+	position: static;
+	background-color: maroon;
+	color: #333333;
+	font-weight: bold;
+	padding: 10px;
+}
+
+#openCloseWrap {
+	position: absolute;
+	margin: 70px -10px 0px -100px;
+	font-size: 12px;
+	font-weight: bold;
+}

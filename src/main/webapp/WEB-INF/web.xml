@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:jsp="http://java.sun.com/xml/ns/javaee/jsp" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" id="WebApp_ID" version="3.1">
+  <display-name>Ghaith</display-name>
+  <welcome-file-list>
+    <welcome-file>./WEB-INF/views/login.jsp</welcome-file>
+  </welcome-file-list>
+  <jsp-config>
+    <jsp-property-group>
+      <url-pattern>*.jsp</url-pattern>
+      <page-encoding>utf-8</page-encoding>
+    </jsp-property-group>
+  </jsp-config>
+  <filter>
+    <display-name>CharSetFilter</display-name>
+    <filter-name>CharSetFilter</filter-name>
+    <filter-class>smarty.filters.CharSetFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>CharSetFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <filter>
+    <display-name>Modifiers</display-name>
+    <filter-name>Modifiers</filter-name>
+    <filter-class>smarty.filters.Modifiers</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>Modifiers</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <filter>
+    <display-name>NoCacheFilter</display-name>
+    <filter-name>NoCacheFilter</filter-name>
+    <filter-class>smarty.filters.NoCacheFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>NoCacheFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <filter>
+    <display-name>ZipFilter</display-name>
+    <filter-name>ZipFilter</filter-name>
+    <filter-class>smarty.filters.ZipFilter</filter-class>
+    <init-param>
+      <param-name>mimeTypes</param-name>
+      <param-value>text/html,text/plain,text/xml,application/xhtml+xml,text/css,application/javascript,image/svg+xml</param-value>
+    </init-param>
+  </filter>
+  <filter>
+    <display-name>CacheFilter</display-name>
+    <filter-name>CacheFilter</filter-name>
+    <filter-class>smarty.filters.CacheFilter</filter-class>
+    <init-param>
+      <description>Add an Expires Header</description>
+      <param-name>header</param-name>
+      <param-value>Expires: Mon, 19 May 2030 00:00:00 GMT</param-value>
+    </init-param>
+  </filter>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.png</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.woff2</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.woff</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.ttf</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.css</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.PNG</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.jpg</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.jpeg</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>CacheFilter</filter-name>
+    <url-pattern>*.js</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>ZipFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <context-param>
+    <description>Location for uploading Contracts </description>
+    <param-name>file.contracts</param-name>
+    <param-value>/home/mds/uploads/files/contracts</param-value>
+  </context-param>
+  <context-param>
+    <description>Location for uploading Id </description>
+    <param-name>img.id</param-name>
+    <param-value>/home/mds/uploads/images/Identities</param-value>
+  </context-param>
+  <context-param>
+    <description>Location for uploading residence id </description>
+    <param-name>img.residenceid</param-name>
+    <param-value>/home/mds/uploads/images/residence</param-value>
+  </context-param>
+  <context-param>
+    <description>Location for uploading agents images </description>
+    <param-name>img.agents</param-name>
+    <param-value>/home/mds/uploads/images/agents</param-value>
+  </context-param>
+  <context-param>
+    <description>Location for uploading customers images </description>
+    <param-name>img.customers</param-name>
+    <param-value>/home/mds/uploads/images/customers</param-value>
+  </context-param>
+  <context-param>
+    <description>Location for uploading staff images </description>
+    <param-name>img.staff</param-name>
+    <param-value>/home/mds/uploads/images/staff</param-value>
+  </context-param>
+  <context-param>
+    <description>Location for uploading staff images </description>
+    <param-name>img.announcements</param-name>
+    <param-value>D:\</param-value>
+  </context-param>
+  <context-param>
+    <description>Location for uploading the excels</description>
+    <param-name>mds.excel.upload.location</param-name>
+   <!--  <param-value>/home/mashawee/uploading/excel</param-value> -->
+    <param-value>D:\excels</param-value>
+  </context-param>
+</web-app>

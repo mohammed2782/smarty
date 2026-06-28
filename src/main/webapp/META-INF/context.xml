@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context reloadable='true'>
+	<!-- Specify a JDBC datasource -->
+	<Resource name="jdbc/MDSCORE" auth="Container" type="javax.sql.DataSource"
+		username="mds" password="ghaithuser9988@#!A" driverClassName="com.mysql.jdbc.Driver"
+		url="jdbc:mysql://localhost:3306/ghaith?autoreconnect=true"
+		connectionProperties="useUnicode=yes;characterEncoding=utf8;zeroDateTimeBehavior=convertToNull;"
+		validationQuery="select 1" maxTotal="10" maxIdle="5" removeAbandonedOnMaintenance="true" removeAbandonedOnBorrow = "true"
+		removeAbandonedTimeout="10"  logAbandoned="true"  suspectTimeout = "30"/>
+	<!-- Specify the security realm and location of the users file <Realm className="org.apache.catalina.realm.MemoryRealm" 
+		pathname="/tomcat/webapps/ROOT/WEB-INF/users.xml" /> -->
+</Context>
