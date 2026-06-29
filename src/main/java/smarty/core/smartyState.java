@@ -1,5 +1,6 @@
 package smarty.core;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +45,8 @@ import javax.servlet.http.HttpServletRequest;
 			)
  
  */
-public class smartyState <T> {
+public class smartyState <T> implements Serializable {
+	private static final long serialVersionUID = 1L;
 	//public HashMap <String ,HashMap <String , T>> smartyStateMap;
 	public HashMap <T , T> smartyStateMap;
 	public int dummy;
