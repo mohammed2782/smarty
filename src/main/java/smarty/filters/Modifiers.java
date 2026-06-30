@@ -44,6 +44,11 @@ public class Modifiers implements Filter {
 			request.setCharacterEncoding("UTF-8");
 		}
 		HttpServletRequest rqs = ((HttpServletRequest) request);
+		String uri = rqs.getRequestURI();
+		if (uri != null && (uri.contains("/webapi/") || uri.contains("/rest/"))) {
+			chain.doFilter(request, response);
+			return;
+		}
 		SessionVars sessionVars = null;
 		if (rqs.getSession().getAttribute("sessionVars")==null){
 			sessionVars = new SessionVars();
