@@ -472,7 +472,7 @@ public class CoreMgr {
 		}
 		LocalTime before = LocalTime.now();
 		if (httpSRequest.getParameter("DEBUG")!=null)
-			if(httpSRequest.getParameter("DEBUG").equals("1")){
+			if(httpSRequest.getParameter("DEBUG").equals("1") && lu != null && "ITBOSS".equals(lu.getRank_code())){
 				Debug = true;
 				
 				performanceAudit.append("<p>initialize started</p>");
