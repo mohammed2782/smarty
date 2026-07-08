@@ -339,25 +339,46 @@ public class SqlMgr {
 
 	private String insertSearchWhereClause(String mainSql, String whereClause) {
 		String mainSqlLower = mainSql.toLowerCase();
-		int fromIndex = mainSqlLower.lastIndexOf(" from ");
+		int fromIndex = indexOfKeywordAtDepthZero(mainSql, mainSqlLower, " from ", 0);
 		if (fromIndex < 0) {
 			return mainSql + " where " + whereClause;
 		}
 
-		String suffixLower = mainSqlLower.substring(fromIndex);
-		int whereInSuffix = suffixLower.indexOf(" where ");
-		if (whereInSuffix >= 0) {
-			int insertAt = fromIndex + whereInSuffix + " where ".length();
+		int whereIndex = indexOfKeywordAtDepthZero(mainSql, mainSqlLower, " where ", fromIndex);
+		if (whereIndex >= 0) {
+			int insertAt = whereIndex + " where ".length();
 			return mainSql.substring(0, insertAt) + whereClause + " and " + mainSql.substring(insertAt);
 		}
 
-		int groupByInSuffix = suffixLower.indexOf(" group by ");
-		if (groupByInSuffix >= 0) {
-			int insertAt = fromIndex + groupByInSuffix;
-			return mainSql.substring(0, insertAt) + " where " + whereClause + " " + mainSql.substring(insertAt);
+		int groupByIndex = indexOfKeywordAtDepthZero(mainSql, mainSqlLower, " group by ", fromIndex);
+		if (groupByIndex >= 0) {
+			return mainSql.substring(0, groupByIndex) + " where " + whereClause + " " + mainSql.substring(groupByIndex);
 		}
 
 		return mainSql + " where " + whereClause;
+	}
+
+	private static int indexOfKeywordAtDepthZero(String sql, String sqlLower, String keyword, int startFrom) {
+		int depth = 0;
+		for (int i = 0; i < startFrom; i++) {
+			char c = sql.charAt(i);
+			if (c == '(') {
+				depth++;
+			} else if (c == ')') {
+				depth--;
+			}
+		}
+		for (int i = startFrom; i <= sqlLower.length() - keyword.length(); i++) {
+			char c = sql.charAt(i);
+			if (c == '(') {
+				depth++;
+			} else if (c == ')') {
+				depth--;
+			} else if (depth == 0 && sqlLower.startsWith(keyword, i)) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	private void bindSearchParameters(PreparedStatement pst, WhereClauseResult whereClauseResult) throws SQLException {
