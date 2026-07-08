@@ -195,7 +195,7 @@ public class SqlMgr {
 			userDefinedWhere = "";
 		}
 		
-		String WhereClause ="";
+		WhereClauseResult whereClauseResult = null;
 		try{
 			// Enahancement to be done, 
 			// 1- to include having.
@@ -205,19 +205,11 @@ public class SqlMgr {
 			
 			if (userDefinedWhere == ""){
 					if (Search_Param!=null){
-						WhereClause = BuildWhereClause(Search_Param , userDefinedHTMLType, userDefinedFilterColsUsingLike, userDefinedFilterColsUsingIn, allSqlColsType);
+						whereClauseResult = BuildWhereClause(Search_Param , userDefinedHTMLType, userDefinedFilterColsUsingLike, userDefinedFilterColsUsingIn, allSqlColsType);
 						// we need to define the location of the where clause
-						if (WhereClause!=null && !WhereClause.trim().equalsIgnoreCase("")){
-							String whereToReplace = MainSql.substring(MainSql.toLowerCase().lastIndexOf(" from "));
-							//System.out.println("whereToReplace---->"+whereToReplace);
-							if (whereToReplace.contains("where")){
-								MainSql = MainSql.replace("where", " where "+WhereClause+" and ");
-							}else if((MainSql.contains("group by"))){
-								
-								MainSql = MainSql.replace("group by", " where "+WhereClause+" group by ");
-							}else{
-								MainSql = MainSql+ " where "+WhereClause;
-							}
+						if (whereClauseResult != null && whereClauseResult.getClause()!=null && !whereClauseResult.getClause().trim().equalsIgnoreCase("")){
+							String WhereClause = whereClauseResult.getClause();
+							MainSql = insertSearchWhereClause(MainSql, WhereClause);
 						}
 					}
 			}else{
@@ -262,9 +254,10 @@ public class SqlMgr {
 			try{
 				//System.out.println("MainSql b4 exec==>"+MainSql);
 				//Save the Currenty Executing SLQ
-				setExecutedSQL(MainSql);
+				setExecutedSQL(formatSqlWithParameters(MainSql, whereClauseResult));
 				// Get Connection and Statement 
 				 pst = conn.prepareStatement(MainSql);
+				 bindSearchParameters(pst, whereClauseResult);
 				 rs = pst.executeQuery();
 			
 			}catch (Exception e ){
@@ -287,47 +280,185 @@ public class SqlMgr {
 		}	
 		return rs;
 	}
+	public static class WhereClauseResult {
+		private final String clause;
+		private final List<Object> parameters;
+
+		public WhereClauseResult(String clause, List<Object> parameters) {
+			this.clause = clause;
+			this.parameters = parameters != null ? parameters : new ArrayList<Object>();
+		}
+
+		public String getClause() {
+			return clause;
+		}
+
+		public List<Object> getParameters() {
+			return parameters;
+		}
+	}
+
+	private static boolean isAllowedSearchColumn(String column,
+			HashMap<String, String> userDefinedHTMLType,
+			ArrayList<String> userDefinedFilterColsUsingLike,
+			ArrayList<String> userDefinedFilterColsUsingIn,
+			HashMap<String, String> allSqlColsType) {
+		if (column == null || column.equals("filter") || !isValidSqlIdentifier(column)) {
+			return false;
+		}
+		if (allSqlColsType != null && allSqlColsType.containsKey(column)) {
+			return true;
+		}
+		if (userDefinedHTMLType != null && userDefinedHTMLType.containsKey(column)) {
+			return true;
+		}
+		if (userDefinedFilterColsUsingLike != null && userDefinedFilterColsUsingLike.contains(column)) {
+			return true;
+		}
+		return userDefinedFilterColsUsingIn != null && userDefinedFilterColsUsingIn.contains(column);
+	}
+
+	private static boolean isValidSqlIdentifier(String identifier) {
+		return identifier != null && identifier.matches("^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)?$");
+	}
+
+	private static boolean isSafeNumericLiteral(String value) {
+		return value != null && value.matches("-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?");
+	}
+
+	private static boolean isSafeDateLiteral(String value) {
+		return value != null && value.matches("^\\d{4}-\\d{2}-\\d{2}( \\d{2}:\\d{2}(:\\d{2})?)?$");
+	}
+
+	private static Number parseNumericValue(String value) {
+		if (value.contains(".") || value.toLowerCase().contains("e")) {
+			return Double.valueOf(value);
+		}
+		return Long.valueOf(value);
+	}
+
+	private String insertSearchWhereClause(String mainSql, String whereClause) {
+		String mainSqlLower = mainSql.toLowerCase();
+		int fromIndex = mainSqlLower.lastIndexOf(" from ");
+		if (fromIndex < 0) {
+			return mainSql + " where " + whereClause;
+		}
+
+		String suffixLower = mainSqlLower.substring(fromIndex);
+		int whereInSuffix = suffixLower.indexOf(" where ");
+		if (whereInSuffix >= 0) {
+			int insertAt = fromIndex + whereInSuffix + " where ".length();
+			return mainSql.substring(0, insertAt) + whereClause + " and " + mainSql.substring(insertAt);
+		}
+
+		int groupByInSuffix = suffixLower.indexOf(" group by ");
+		if (groupByInSuffix >= 0) {
+			int insertAt = fromIndex + groupByInSuffix;
+			return mainSql.substring(0, insertAt) + " where " + whereClause + " " + mainSql.substring(insertAt);
+		}
+
+		return mainSql + " where " + whereClause;
+	}
+
+	private void bindSearchParameters(PreparedStatement pst, WhereClauseResult whereClauseResult) throws SQLException {
+		if (whereClauseResult == null || whereClauseResult.getParameters().isEmpty()) {
+			return;
+		}
+		int paramIndex = 1;
+		for (Object param : whereClauseResult.getParameters()) {
+			if (param instanceof Number) {
+				pst.setObject(paramIndex++, param);
+			} else {
+				pst.setString(paramIndex++, param != null ? param.toString() : null);
+			}
+		}
+	}
+
+	private String formatSqlWithParameters(String sql, WhereClauseResult whereClauseResult) {
+		if (whereClauseResult == null || whereClauseResult.getParameters().isEmpty()) {
+			return sql;
+		}
+		return sql + " /* params: " + whereClauseResult.getParameters() + " */";
+	}
+
+	private boolean appendInClauseCondition(StringBuilder innerCol, List<Object> parameters, String parameter,
+			String value, HashMap<String, String> allSqlColsType) {
+		ArrayList<String> inValues = CoreUtilities.SplitStringToArrayList(value, ":");
+		List<Object> validValues = new ArrayList<Object>();
+		for (String inValue : inValues) {
+			if (inValue == null || inValue.equals("")) {
+				continue;
+			}
+			if (allSqlColsType != null && allSqlColsType.containsKey(parameter) && allSqlColsType.get(parameter) != null
+					&& numberList.contains(allSqlColsType.get(parameter))) {
+				if (!isSafeNumericLiteral(inValue)) {
+					continue;
+				}
+				validValues.add(parseNumericValue(inValue));
+			} else {
+				validValues.add(inValue);
+			}
+		}
+		if (validValues.isEmpty()) {
+			return false;
+		}
+		innerCol.append(parameter).append(" in (");
+		for (int i = 0; i < validValues.size(); i++) {
+			if (i > 0) {
+				innerCol.append(",");
+			}
+			innerCol.append("?");
+		}
+		innerCol.append(") or ");
+		parameters.addAll(validValues);
+		return true;
+	}
+
 	/*
 	 * Build the Where Clause. 
 	 */
-	public  String BuildWhereClause(HashMap <String,String[]> SearchFieldsVals , HashMap <String,String> userDefinedHTMLType , 
+	public WhereClauseResult BuildWhereClause(HashMap <String,String[]> SearchFieldsVals , HashMap <String,String> userDefinedHTMLType , 
 			ArrayList<String> userDefinedFilterColsUsingLike, ArrayList<String> userDefinedFilterColsUsingIn ,HashMap<String,String> allSqlColsType){
-		String WhereClause = "";
-		String innerCol ="";
+		String whereClause = "";
+		List<Object> parameters = new ArrayList<Object>();
+		StringBuilder innerCol;
 		boolean found_param =false;
-		boolean foundVal  = false;
+		boolean hasCondition  = false;
 		// normally the syntax is (col1='') and (col2='')
 		// BUT if you have more than one value for the same col so the syntax should be
 		// (col1='' or col1='') and (col2='') , so you don't colse the paranthesis unless the col is changed
-		String prevCol="";
 		for(String parameter : SearchFieldsVals.keySet()) { 
-			innerCol = "";
-			if (!parameter.equals("filter") && SearchFieldsVals.get(parameter)!=null){
-				found_param = true;
-				innerCol +="(";
+			innerCol = new StringBuilder();
+			hasCondition = false;
+			if (!parameter.equals("filter") && SearchFieldsVals.get(parameter)!=null
+					&& isAllowedSearchColumn(parameter, userDefinedHTMLType, userDefinedFilterColsUsingLike, userDefinedFilterColsUsingIn, allSqlColsType)){
+				innerCol.append("(");
 				for (String value : SearchFieldsVals.get(parameter))
 			    {	
-					foundVal = false;
 			    	if ((value !=null) && (!value.equals("")))
-					{		    
-			    		
-			    		foundVal = true;
+					{
 						if (userDefinedHTMLType!=null && userDefinedHTMLType.containsKey(parameter)
 								&& (userDefinedHTMLType.get(parameter).equalsIgnoreCase("CHECKBOX") || 
 										userDefinedHTMLType.get(parameter).equalsIgnoreCase("MULTILIST"))){
-							if (userDefinedFilterColsUsingIn!=null && userDefinedFilterColsUsingIn.size()>0 && userDefinedFilterColsUsingIn.contains(parameter)) {// here we search for the exact 
-								String newVal = CoreUtilities.getSingleQuoteCommaSeperated(CoreUtilities.SplitStringToArrayList(value, ":")).toString();
-								
-								innerCol +=parameter+" in ("+newVal+") or ";
-							
+							if (userDefinedFilterColsUsingIn!=null && userDefinedFilterColsUsingIn.size()>0 && userDefinedFilterColsUsingIn.contains(parameter)) {
+								if (appendInClauseCondition(innerCol, parameters, parameter, value, allSqlColsType)) {
+									hasCondition = true;
+								}
 							}else {
-								// if collection then we need to use like
-								innerCol +=parameter+" like '%"+value+colCollectionDelimmiter+"%' or ";
-								innerCol +=parameter+"='"+value+"' or ";
+								innerCol.append(parameter).append(" like ? or ");
+								parameters.add("%"+value+colCollectionDelimmiter+"%");
+								innerCol.append(parameter).append("=? or ");
+								parameters.add(value);
+								hasCondition = true;
 							}
 						}else if (userDefinedHTMLType!=null && userDefinedHTMLType.containsKey(parameter)
 								&& userDefinedHTMLType.get(parameter).equalsIgnoreCase("TIMESTAMP")) {
-							innerCol +="date("+parameter+")"+"='"+value+"' or ";
+							if (!isSafeDateLiteral(value)) {
+								continue;
+							}
+							innerCol.append("date(").append(parameter).append(")=? or ");
+							parameters.add(value);
+							hasCondition = true;
 						}else if (userDefinedHTMLType!=null && userDefinedHTMLType.containsKey(parameter)
 								&& (userDefinedHTMLType.get(parameter).equalsIgnoreCase("PHONE"))){
 									arbicToEnglishNumbers = getArabicToEnglishNumbersMap();
@@ -342,39 +473,48 @@ public class SqlMgr {
 											otherValue += englishToArabicNumbers.get(value.charAt(i)+"");
 										}
 									}
-									innerCol += "("+parameter+"='"+value+"' or "+parameter+"='"+otherValue+"' ) or ";
+									innerCol.append("(").append(parameter).append("=? or ").append(parameter).append("=? ) or ");
+									parameters.add(value);
+									parameters.add(otherValue);
+									hasCondition = true;
 						}else{
 							if (userDefinedFilterColsUsingLike!=null && userDefinedFilterColsUsingLike.size()>0 && userDefinedFilterColsUsingLike.contains(parameter)) {// here we search for the exact 
-								innerCol +=parameter+" like '%"+value+"%' or ";
-								//System.out.println("this is --->"+parameter);
+								innerCol.append(parameter).append(" like ? or ");
+								parameters.add("%"+value+"%");
+								hasCondition = true;
 							}else {
 								if ( (allSqlColsType!=null && allSqlColsType.containsKey(parameter) && allSqlColsType.get(parameter)!=null && numberList.contains(allSqlColsType.get(parameter))) 
-										)
-									innerCol +=parameter+"="+value+" or ";
-								else
-									innerCol +=parameter+"='"+value+"' or ";
+										) {
+									if (!isSafeNumericLiteral(value)) {
+										continue;
+									}
+									innerCol.append(parameter).append("=? or ");
+									parameters.add(parseNumericValue(value));
+									hasCondition = true;
+								} else {
+									innerCol.append(parameter).append("=? or ");
+									parameters.add(value);
+									hasCondition = true;
+								}
 							}
 						}
 					} 
 			    }
-				//System.out.println("paramterp------->"+parameter+", allSqlColsType.get(parameter)------->"+allSqlColsType.get(parameter));
-				if(foundVal){
-					innerCol = innerCol.substring(0,innerCol.length()-3);
-					innerCol +=") and ";
-				}else{
-					innerCol = "";
+				if(hasCondition){
+					found_param = true;
+					innerCol.setLength(innerCol.length()-3);
+					innerCol.append(") and ");
+					whereClause += innerCol.toString();
 				}
 			}
-			if (found_param && foundVal)
-				WhereClause+=innerCol;
 		}
 		if (!found_param){
 			return null;
 		}
-		if (WhereClause.length()>=5)
-			WhereClause = WhereClause.substring(0,WhereClause.length()-5);
-		/*System.out.println(WhereClause);*/
-		return WhereClause;
+		if (whereClause.length()>=5)
+			whereClause = whereClause.substring(0,whereClause.length()-5);
+		/*System.out.println(whereClause);*/
+		return new WhereClauseResult(whereClause, parameters);
 	}
 	
 	/*
