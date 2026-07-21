@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -763,10 +764,15 @@ public class CoreMgr {
 	        		originalValue.put(rsmd.getColumnLabel(col), rs.getString(rsmd.getColumnLabel(col)));
 				gridHtml.append(getGrouping(rs,i , colSpan , lastOriginalValueForEndGrouping, numFormat , false));	
 				if (!clickableRow && userDefinedSlidingGroups) {
-					if (userDefinedSlidingGroupValue !=null && !userDefinedSlidingGroupValue.trim().equalsIgnoreCase(""))
-						GroupTitle = "GroupTitle-"+originalValue.get(userDefinedSlidingGroupValue).replace(" ", "_").replace(".", "_")+"='"+originalValue.get(userDefinedSlidingGroupValue).replace(" ", "_").replace(".", "_")+"'";
-					else
-						GroupTitle = "GroupTitle-"+groupDisplayVal.replace(" ", "_").replace(".", "_")+"='"+groupDisplayVal.replace(" ", "_").replace(".", "_")+"'";
+					String valToReplace = (userDefinedSlidingGroupValue != null && !userDefinedSlidingGroupValue.trim().isEmpty())
+							? originalValue.get(userDefinedSlidingGroupValue)
+							: groupDisplayVal;
+					if (valToReplace != null) {
+						String cleanVal = valToReplace.replace(" ", "_").replace(".", "_");
+						GroupTitle = "GroupTitle-" + cleanVal + "='" + cleanVal + "'";
+					} else {
+						GroupTitle = "GroupTitle-=''";
+					}
 				}else {
 					GroupTitle = "";
 				}
@@ -971,7 +977,7 @@ public class CoreMgr {
 		gridHtml.append("</tbody>");
 		
 		view.append(gridHtml);
-		String tableId = "smarty_table_"+myClassBean.replace(".", "_dot_");
+		String tableId = "smarty_table_" + (myClassBean != null ? myClassBean.replace(".", "_dot_") : "");
 		view.append("</table>"
 				+ "</div>");
 		
@@ -1019,13 +1025,12 @@ public class CoreMgr {
 	        						   			+rs.getString(userDefinedGroupByCol)+"'>"+groupDisplayVal+"</a>";
         			   }	
         			   if (userDefinedSlidingGroups){
-        				   if (userDefinedSlidingGroupValue !=null && !userDefinedSlidingGroupValue.trim().equalsIgnoreCase("")) {
-	       						myGroupTitle = "GroupTitle='"+rs.getString(userDefinedSlidingGroupValue).replace(" ", "_").replace(".", "_")+"'";
-	       						controlGroup = "controlgroup='"+rs.getString(userDefinedSlidingGroupValue).replace(" ", "_").replace(".", "_")+"'";
-        				   }else {
-	       						myGroupTitle = "GroupTitle='"+groupDisplayVal.replace(" ", "_").replace(".", "_")+"'";
-	       						controlGroup = "controlgroup='"+groupDisplayVal.replace(" ", "_").replace(".", "_")+"'";
-        				   }
+        				   String slidingVal = (userDefinedSlidingGroupValue != null && !userDefinedSlidingGroupValue.trim().isEmpty())
+        						   ? rs.getString(userDefinedSlidingGroupValue)
+        						   : groupDisplayVal;
+        				   String safeSlidingVal = slidingVal != null ? slidingVal.replace(" ", "_").replace(".", "_") : "";
+        				   myGroupTitle = "GroupTitle='" + safeSlidingVal + "'";
+        				   controlGroup = "controlgroup='" + safeSlidingVal + "'";
         				   view.append("<tr class='"+userDefinedGroupRowClass+"'>"
         						   + "<td colspan='"+colSpan+"' class='"+userDefinedGroupClass+"'>"
 		        					+ " <a href='#' class='"+userDefinedGroupClass+" special_sliding_group'  "+ controlGroup+ ">"+groupDisplayVal+"</a>"+ "</td></tr>");
@@ -1046,8 +1051,9 @@ public class CoreMgr {
 	        				   view.append ("</thead>");
 	        			   }
 	        			}
-	        		if (!prevGroupVal.equals(rs.getString(userDefinedGroupByCol))){// if new value
-	        				groupDisplayVal= prevGroupVal = rs.getString(userDefinedGroupByCol);
+	        		String currentGroupVal = rs.getString(userDefinedGroupByCol);
+	        		if (!Objects.equals(prevGroupVal, currentGroupVal)){// if new value
+	        				groupDisplayVal= prevGroupVal = currentGroupVal;
       					if (colMapValues!=null && colMapValues.get(userDefinedGroupByCol)!=null)
       						if (colMapValues.get(userDefinedGroupByCol).get (prevGroupVal)!=null)
       							groupDisplayVal = colMapValues.get(userDefinedGroupByCol).get (prevGroupVal);
@@ -1078,14 +1084,13 @@ public class CoreMgr {
 	        					groupDisplayVal = "<a href='?"+userDefinedGlobalClickRowID+"="+rs.getString(userDefinedGroupByCol)+"'>"+groupDisplayVal+"</a>";
 	        			}
       					// to-do : move the style into css
-      					 if (userDefinedSlidingGroups){
-      						 if (userDefinedSlidingGroupValue !=null && !userDefinedSlidingGroupValue.trim().equalsIgnoreCase("")) {
-		       						myGroupTitle = "GroupTitle='"+rs.getString(userDefinedSlidingGroupValue).replace(" ", "_").replace(".", "_")+"'";
-		       						controlGroup = "controlgroup='"+rs.getString(userDefinedSlidingGroupValue).replace(" ", "_").replace(".", "_")+"'";
-   						 }else {
-		       						myGroupTitle = "GroupTitle='"+groupDisplayVal.replace(" ", "_").replace(".", "_")+"'";
-		       						controlGroup = "controlgroup='"+groupDisplayVal.replace(" ", "_").replace(".", "_")+"'";
-   						 }
+       					 if (userDefinedSlidingGroups){
+       						 String slidingVal = (userDefinedSlidingGroupValue != null && !userDefinedSlidingGroupValue.trim().isEmpty())
+       								 ? rs.getString(userDefinedSlidingGroupValue)
+       								 : groupDisplayVal;
+       						 String safeSlidingVal = slidingVal != null ? slidingVal.replace(" ", "_").replace(".", "_") : "";
+       						 myGroupTitle = "GroupTitle='" + safeSlidingVal + "'";
+       						 controlGroup = "controlgroup='" + safeSlidingVal + "'";
 		        			view.append(" <tr class='"+userDefinedGroupRowClass+"'>"
 		        					+ "<td colspan='"+colSpan+"' class='"+userDefinedGroupClass+"'>"
 		        					+ " <a href='#' class='"+userDefinedGroupClass+" special_sliding_group'  "
@@ -1124,13 +1129,9 @@ public class CoreMgr {
   							}else{
   								groupSumVals = 0.0;
   							}					
-  							if (rs.getString(KeySum)== null){
-  								groupSumVals = groupSumVals + 0;
-  							}else{
-  								if (rs.getString(KeySum).trim()== null || rs.getString(KeySum).trim().equals("") )
-  									groupSumVals = groupSumVals + 0;
-  								else
-  									groupSumVals = groupSumVals + Double.parseDouble(rs.getString(KeySum)); 
+  							String sumStrVal = rs.getString(KeySum);
+  							if (sumStrVal != null && !sumStrVal.trim().isEmpty()){
+  								groupSumVals = groupSumVals + Double.parseDouble(sumStrVal);
   							}
   							// need to put handle here if the value is not number
   							groupSumCols.remove(KeySum);
